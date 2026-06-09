@@ -1,4 +1,7 @@
-# 🚌 TransitPay Ecosystem
+# 🚌 TransitPay Ecosystem 
+
+**Live Demo:** [Click here to test the PWA on your phone!](https://dharshansundarraj.github.io/TransitPay-Engine/frontend/)
+*(Note: This demo showcases the UI and Offline Scanner Engine. The Spring Boot backend is not hosted on GitHub Pages).*
 
 An enterprise-grade, closed-loop digital wallet and ticketing engine built for local transit networks. 
 
