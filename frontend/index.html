@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TransitPay System</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  </head>
+  <body class="light-theme">
+    <div id="loginScreen" class="auth-gateway">
+      <div class="auth-card fade-in-up">
+        <div class="brand-centered">
+          <div class="logo-mark">T</div>
+          <h1>TransitPay</h1>
+        </div>
+        <div class="auth-actions">
+          <button
+            id="btnLoginConductor"
+            class="action-btn primary-btn full-width"
+          >
+            Conductor Access
+          </button>
+          <button
+            id="btnLoginPassenger"
+            class="action-btn outline-btn full-width"
+            style="margin-top: 1rem"
+          >
+            Passenger Access
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-container" id="mainApp" style="display: none">
+      <header class="app-header">
+        <div class="brand">
+          <div class="logo-mark-small">T</div>
+          <div class="brand-text">
+            <h1>TransitPay</h1>
+            <p id="roleLabel">TERMINAL</p>
+          </div>
+        </div>
+        <div class="header-status">
+          <button id="themeToggle" class="icon-btn" aria-label="Toggle Theme">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <button
+            id="btnLogout"
+            class="icon-btn"
+            aria-label="Logout"
+            style="margin-right: 15px"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+          <span id="networkIndicator" class="status-dot"></span>
+          <span id="networkText" class="hide-mobile">Online</span>
+        </div>
+      </header>
+
+      <nav class="tab-nav" id="conductorNav">
+        <button class="tab-btn active" id="tab-scan">Scanner</button>
+        <button class="tab-btn" id="tab-issue">Registration</button>
+      </nav>
+
+      <main class="workspace fade-in">
+        <div id="view-scan" class="view-panel active">
+          <div class="layout-stack">
+            <section class="module scanner-module">
+              <div class="scanner-header">
+                <h2 class="section-title">Scan Transit QR</h2>
+              </div>
+
+              <div id="reader-container" class="camera-container">
+                <div id="cameraStartOverlay" class="camera-overlay">
+                  <span>TAP TO START SCANNER</span>
+                </div>
+                <button
+                  id="cameraCloseBtn"
+                  class="camera-close-btn"
+                  style="display: none"
+                >
+                  ✕ CLOSE CAMERA
+                </button>
+                <div id="qrReader"></div>
+              </div>
+
+              <div class="input-row" style="margin-top: 1.5rem">
+                <input
+                  type="text"
+                  id="scanUuid"
+                  class="clean-input"
+                  placeholder="Reference ID"
+                />
+                <button id="btnLookup" class="action-btn outline-btn">
+                  Lookup
+                </button>
+              </div>
+            </section>
+
+            <section id="authPanel" class="module auth-module disabled-state">
+              <div class="wallet-info">
+                <div>
+                  <h3 id="walletName" class="data-value">--</h3>
+                  <p id="walletPhone" class="meta-label">--</p>
+                </div>
+                <div class="balance-badge">
+                  <h2 id="walletBalance">₹0.00</h2>
+                </div>
+              </div>
+
+              <hr class="divider" />
+
+              <div class="transaction-controls">
+                <div class="control-group">
+                  <label>Route Selection</label>
+                  <div class="custom-select-wrapper" id="routeDropdownWrapper">
+                    <div
+                      class="custom-select-trigger"
+                      id="routeDropdownTrigger"
+                    >
+                      <span id="selectedRouteText"
+                        >ROUTE-A1 (Chidambaram - Chennai)</span
+                      >
+                      <svg
+                        class="custom-arrow"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </div>
+                    <div class="custom-options" id="routeOptions">
+                      <div class="custom-option active" data-value="ROUTE-A1">
+                        ROUTE-A1 (Chidambaram - Chennai)
+                      </div>
+                      <div class="custom-option" data-value="ROUTE-B2">
+                        ROUTE-B2 (Salem Express)
+                      </div>
+                      <div class="custom-option" data-value="ROUTE-L1">
+                        ROUTE-L1 (Local Shuttle)
+                      </div>
+                    </div>
+                  </div>
+                  <input type="hidden" id="routeCode" value="ROUTE-A1" />
+                </div>
+
+                <div class="control-group">
+                  <label>Fare Amount</label>
+                  <input
+                    type="number"
+                    id="fareAmount"
+                    class="clean-input"
+                    value="45.00"
+                    step="0.50"
+                  />
+                </div>
+              </div>
+              <button
+                id="btnProcessFare"
+                class="action-btn success-btn full-width"
+                style="margin-top: 1rem"
+              >
+                PROCESS PAYMENT
+              </button>
+            </section>
+
+            <section class="module ledger-module">
+              <h4 class="module-title">Recent Transactions</h4>
+              <ul id="ledgerList" class="ledger-list">
+                <li class="empty-state">No transactions in current session.</li>
+              </ul>
+            </section>
+          </div>
+        </div>
+
+        <div id="view-issue" class="view-panel" style="display: none">
+          <section class="module issue-module">
+            <h2 class="section-title">Commuter Registration</h2>
+
+            <div class="form-stack">
+              <div class="control-group">
+                <label>Full Name</label>
+                <input
+                  type="text"
+                  id="newName"
+                  class="clean-input"
+                  placeholder="Enter Full Name"
+                  required
+                />
+              </div>
+              <div class="control-group">
+                <label>Contact Number</label>
+                <input
+                  type="tel"
+                  id="newPhone"
+                  class="clean-input"
+                  placeholder="Enter Mobile Number"
+                  required
+                />
+              </div>
+              <div class="control-group">
+                <label>Initial Deposit (₹)</label>
+                <input
+                  type="number"
+                  id="newBalance"
+                  class="clean-input"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+              <button
+                id="btnIssuePass"
+                class="action-btn primary-btn full-width"
+                style="margin-top: 1.5rem"
+              >
+                ISSUE TRANSIT CARD
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <div id="view-passenger" class="view-panel" style="display: none">
+          <section class="module">
+            <h2 class="section-title">Wallet Balance</h2>
+
+            <div
+              class="input-row"
+              style="margin-bottom: 2rem; margin-top: 1rem"
+            >
+              <input
+                type="text"
+                id="passengerUuid"
+                class="clean-input"
+                placeholder="Enter Reference ID"
+              />
+              <button id="btnPassengerLookup" class="action-btn primary-btn">
+                Check
+              </button>
+            </div>
+
+            <div
+              id="passengerWallet"
+              class="wallet-info"
+              style="
+                display: none;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1.5rem;
+                background: rgba(37, 99, 235, 0.05);
+                padding: 1.5rem;
+                border-radius: 12px;
+                border: 1px solid rgba(37, 99, 235, 0.2);
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  width: 100%;
+                "
+              >
+                <div>
+                  <h3 id="pName" class="data-value">--</h3>
+                  <p class="meta-label">Active Passenger</p>
+                </div>
+                <div class="balance-badge">
+                  <h2 id="pBalance">₹0.00</h2>
+                </div>
+              </div>
+
+              <button
+                id="btnDownloadCard"
+                class="action-btn outline-btn full-width"
+              >
+                View / Print Smart Card
+              </button>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div id="customModal" class="modal-backdrop" style="display: none">
+      <div class="modal-card" id="printableArea">
+        <div id="standardModalContent">
+          <div id="modalIndicator" class="modal-indicator"></div>
+          <h3 id="modalTitle">Status</h3>
+          <p id="modalMessage">Message content.</p>
+        </div>
+
+        <div id="cardRenderer" class="transit-id-card" style="display: none">
+          <div class="card-header">
+            <div class="logo-mark-small">T</div>
+            <span>TransitPay Smart Card</span>
+          </div>
+          <div class="card-body">
+            <div class="card-details">
+              <p class="card-label">PASSENGER</p>
+              <h4 id="cardName">--</h4>
+              <p class="card-label">CONTACT</p>
+              <p id="cardPhone" class="card-value">--</p>
+            </div>
+            <div id="cardQrCode" class="qr-container"></div>
+          </div>
+          <div class="card-footer">
+            <p id="cardUuid" class="uuid-text">--</p>
+          </div>
+        </div>
+
+        <div class="modal-actions no-print">
+          <button
+            id="btnPrintBtn"
+            class="action-btn outline-btn"
+            style="display: none; width: 100%; margin-bottom: 0.5rem"
+          >
+            PRINT CARD
+          </button>
+          <button id="modalCloseBtn" class="action-btn primary-btn full-width">
+            DISMISS
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
