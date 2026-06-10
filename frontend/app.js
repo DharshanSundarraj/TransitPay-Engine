@@ -4,6 +4,19 @@ let activePassId = null;
 let html5QrCode = null;
 let currentPassengerPass = null;
 
+// --- TNSTC REAL ROUTE DATA & FARE MATRIX (CHIDAMBARAM TO SALEM) ---
+const TNSTC_STAGES = [
+  { id: "CHIDAMBARAM", name: "Chidambaram", cumulativeFare: 0 },
+  { id: "VADALUR", name: "Vadalur", cumulativeFare: 25 },
+  { id: "NEYVELI", name: "Neyveli", cumulativeFare: 40 },
+  { id: "VRIDDHACHALAM", name: "Vriddhachalam", cumulativeFare: 60 },
+  { id: "VEPPUR", name: "Veppur Cross", cumulativeFare: 90 },
+  { id: "THALAIVASAL", name: "Thalaivasal", cumulativeFare: 125 },
+  { id: "ATTUR", name: "Attur", cumulativeFare: 145 },
+  { id: "VALAPADY", name: "Valapady", cumulativeFare: 170 },
+  { id: "SALEM", name: "Salem (Central)", cumulativeFare: 195 },
+];
+
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   setupAuth();
@@ -13,7 +26,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initScanner();
 });
 
-// --- ENVIRONMENTAL UX ---
 function triggerHaptic(type) {
   if (!navigator.vibrate) return;
   if (type === "success") navigator.vibrate([100, 50, 100]);
@@ -34,35 +46,90 @@ function initTheme() {
   });
 }
 
-// --- CUSTOM ROUTE DROPDOWN ENGINE ---
 function setupCustomDropdown() {
-  const wrapper = document.getElementById("routeDropdownWrapper");
-  const trigger = document.getElementById("routeDropdownTrigger");
-  const options = document.querySelectorAll(".custom-option");
-  const selectedText = document.getElementById("selectedRouteText");
-  const hiddenInput = document.getElementById("routeCode");
+  populateStageDropdown(
+    "boardOptions",
+    "boardDropdownWrapper",
+    "selectedBoardText",
+    "boardStage",
+    "CHIDAMBARAM",
+  );
+  populateStageDropdown(
+    "alightOptions",
+    "alightDropdownWrapper",
+    "selectedAlightText",
+    "alightStage",
+    "SALEM",
+  );
+  calculateDynamicFare();
+}
+
+function populateStageDropdown(
+  optionsContainerId,
+  wrapperId,
+  textId,
+  hiddenInputId,
+  defaultVal,
+) {
+  const container = document.getElementById(optionsContainerId);
+  const wrapper = document.getElementById(wrapperId);
+  const trigger = wrapper.querySelector(".custom-select-trigger");
+  const hiddenInput = document.getElementById(hiddenInputId);
+
+  container.innerHTML = TNSTC_STAGES.map(
+    (stage) => `
+        <div class="custom-option ${stage.id === defaultVal ? "active" : ""}" data-value="${stage.id}">
+            ${stage.name} (₹${stage.cumulativeFare})
+        </div>
+    `,
+  ).join("");
 
   trigger.addEventListener("click", (e) => {
+    document.querySelectorAll(".custom-select-wrapper").forEach((w) => {
+      if (w !== wrapper) w.classList.remove("open");
+    });
     wrapper.classList.toggle("open");
     e.stopPropagation();
   });
 
-  options.forEach((option) => {
+  container.querySelectorAll(".custom-option").forEach((option) => {
     option.addEventListener("click", () => {
-      options.forEach((opt) => opt.classList.remove("active"));
+      container
+        .querySelectorAll(".custom-option")
+        .forEach((opt) => opt.classList.remove("active"));
       option.classList.add("active");
-      selectedText.innerText = option.innerText;
+      document.getElementById(textId).innerText =
+        option.innerText.split(" (")[0];
       hiddenInput.value = option.getAttribute("data-value");
       wrapper.classList.remove("open");
+      calculateDynamicFare();
     });
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!wrapper.contains(e.target)) wrapper.classList.remove("open");
   });
 }
 
-// --- AUTHENTICATION GATEWAY ---
+function calculateDynamicFare() {
+  const boardId = document.getElementById("boardStage").value;
+  const alightId = document.getElementById("alightStage").value;
+
+  const boardStage = TNSTC_STAGES.find((s) => s.id === boardId);
+  const alightStage = TNSTC_STAGES.find((s) => s.id === alightId);
+
+  let netFare = Math.abs(
+    alightStage.cumulativeFare - boardStage.cumulativeFare,
+  );
+
+  if (netFare === 0 && boardId !== alightId) netFare = 15.0;
+  if (boardId === alightId) netFare = 0.0;
+
+  document.getElementById("fareAmount").value = netFare.toFixed(2);
+}
+
+document.addEventListener("click", () => {
+  document
+    .querySelectorAll(".custom-select-wrapper")
+    .forEach((w) => w.classList.remove("open"));
+});
+
 function setupAuth() {
   const loginScreen = document.getElementById("loginScreen");
   const mainApp = document.getElementById("mainApp");
@@ -103,7 +170,6 @@ function setupAuth() {
   });
 }
 
-// --- TABS ---
 function setupTabs() {
   const tabScan = document.getElementById("tab-scan");
   const tabIssue = document.getElementById("tab-issue");
@@ -126,7 +192,6 @@ function setupTabs() {
   });
 }
 
-// --- MODAL, PRINT & CARD RENDERER ---
 function showModal(
   type,
   title,
@@ -182,19 +247,14 @@ document
   .getElementById("btnPrintBtn")
   .addEventListener("click", () => window.print());
 
-// --- HIGH SPEED QR SCANNER ---
 function initScanner() {
   html5QrCode = new Html5Qrcode("qrReader");
-
   document
     .getElementById("cameraStartOverlay")
-    .addEventListener("click", () => {
-      startScanner();
-    });
-
-  document.getElementById("cameraCloseBtn").addEventListener("click", () => {
-    stopScanner();
-  });
+    .addEventListener("click", startScanner);
+  document
+    .getElementById("cameraCloseBtn")
+    .addEventListener("click", stopScanner);
 }
 
 function startScanner() {
@@ -207,7 +267,7 @@ function startScanner() {
         { facingMode: "environment" },
         { fps: 15, qrbox: { width: 250, height: 250 } },
         (decodedText) => {
-          document.getElementById("scanUuid").value = decodedText;
+          document.getElementById("scanInput").value = decodedText;
           triggerHaptic("success");
           stopScanner();
           document.getElementById("btnLookup").click();
@@ -234,7 +294,6 @@ function stopScanner() {
   }
 }
 
-// --- SILENT OFFLINE SYNC ENGINE ---
 function setupNetworkListeners() {
   window.addEventListener("online", handleNetworkChange);
   window.addEventListener("offline", handleNetworkChange);
@@ -244,7 +303,6 @@ function setupNetworkListeners() {
 function handleNetworkChange() {
   const indicator = document.getElementById("networkIndicator");
   const text = document.getElementById("networkText");
-
   if (navigator.onLine) {
     indicator.classList.remove("offline");
     text.classList.remove("text-offline");
@@ -291,10 +349,8 @@ async function syncOfflineTransactions() {
       if (response.ok) successfulSyncs.push(i);
     } catch (err) {}
   }
-
   queue = queue.filter((_, index) => !successfulSyncs.includes(index));
   localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
-
   if (successfulSyncs.length > 0 && activePassId) fetchLedger(activePassId);
 }
 
@@ -304,17 +360,18 @@ document.getElementById("btnIssuePass").addEventListener("click", async () => {
   const phone = document.getElementById("newPhone").value;
   const balance = parseFloat(document.getElementById("newBalance").value);
 
-  if (!name || !phone || isNaN(balance))
+  if (!name || phone.length !== 10 || isNaN(balance))
     return showModal(
       "error",
       "Validation Failed",
-      "Please complete all passenger details.",
+      "Please verify the 10-digit mobile number and other details.",
     );
 
   const uuid = `TNS-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
   const payload = {
     passUuid: uuid,
     passengerName: name,
+    passengerPhone: phone,
     currentBalance: balance,
   };
 
@@ -338,25 +395,42 @@ document.getElementById("btnIssuePass").addEventListener("click", async () => {
   }
 });
 
+// SMART SEARCH ROUTING (Conductor)
 document.getElementById("btnLookup").addEventListener("click", async () => {
-  const uuid = document.getElementById("scanUuid").value;
-  if (!uuid) return;
+  const rawQuery = document.getElementById("scanInput").value.trim();
+  if (!rawQuery) return;
+
+  let endpoint = "";
+  if (rawQuery.toUpperCase().startsWith("TNS-")) {
+    endpoint = `${API_URL}/pass/${rawQuery.toUpperCase()}`;
+  } else if (/^[\d\+\-\s]+$/.test(rawQuery)) {
+    const cleanPhone = rawQuery.replace(/[\s\-]/g, "");
+    endpoint = `${API_URL}/pass/phone/${cleanPhone}`;
+  } else {
+    endpoint = `${API_URL}/pass/name/${rawQuery}`;
+  }
 
   try {
-    const response = await fetch(`${API_URL}/pass/${uuid}`);
+    const response = await fetch(endpoint);
     if (response.ok && response.headers.get("content-length") !== "0") {
       const pass = await response.json();
       activePassId = pass.id;
 
       document.getElementById("walletName").innerText = pass.passengerName;
-      document.getElementById("walletPhone").innerText = "Verified User";
+      document.getElementById("walletPhone").innerText =
+        pass.passengerPhone || "No Phone Registered";
       document.getElementById("walletBalance").innerText =
         `₹${pass.currentBalance.toFixed(2)}`;
+      document.getElementById("scanInput").value = pass.passUuid;
 
       document.getElementById("authPanel").classList.remove("disabled-state");
       fetchLedger(activePassId);
     } else {
-      showModal("error", "Invalid Card", "This card is not recognized.");
+      showModal(
+        "error",
+        "Not Found",
+        "Could not locate commuter with that data.",
+      );
       resetTerminal();
     }
   } catch (err) {
@@ -367,12 +441,26 @@ document.getElementById("btnLookup").addEventListener("click", async () => {
 document
   .getElementById("btnProcessFare")
   .addEventListener("click", async () => {
-    const uuid = document.getElementById("scanUuid").value;
-    const routeCodeFull = document.getElementById("routeCode").value; // Get from hidden input
+    const uuid = document.getElementById("scanInput").value;
+    const bStage = document.getElementById("boardStage").value;
+    const aStage = document.getElementById("alightStage").value;
     const amount = parseFloat(document.getElementById("fareAmount").value);
-    const route = routeCodeFull.split("-")[1]; // Extracts A1, B2, L1
 
-    const payload = { passUuid: uuid, routeCode: route, fareAmount: amount };
+    if (amount <= 0) {
+      showModal(
+        "error",
+        "Invalid Journey",
+        "Boarding and Alighting points cannot be identical.",
+      );
+      return;
+    }
+
+    const shortRouteDisplay = `${bStage.substring(0, 4)}→${aStage.substring(0, 4)}`;
+    const payload = {
+      passUuid: uuid,
+      routeCode: shortRouteDisplay,
+      fareAmount: amount,
+    };
 
     if (!navigator.onLine) {
       queueTransactionLocally(payload);
@@ -392,16 +480,15 @@ document
         showModal(
           "success",
           "Payment Successful",
-          `Deducted: ₹${amount.toFixed(2)}\nRef: #${receipt.id}`,
+          `Route: ${bStage} to ${aStage}\nDebited: ₹${amount.toFixed(2)}\nRef: #${receipt.id}`,
         );
         updateLocalBalance(amount);
-
         const time = new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         });
         injectLedgerRow(
-          route,
+          shortRouteDisplay,
           amount,
           `#${receipt.id} • ${time}`,
           "afterbegin",
@@ -430,12 +517,10 @@ async function fetchLedger(passId) {
     const ledger = await response.json();
     const list = document.getElementById("ledgerList");
     list.innerHTML = "";
-
     if (ledger.length === 0) {
       list.innerHTML = '<li class="empty-state">No prior trips recorded.</li>';
       return;
     }
-
     ledger.forEach((txn) => {
       const time = new Date(txn.transactionTime).toLocaleTimeString([], {
         hour: "2-digit",
@@ -470,24 +555,34 @@ function injectLedgerRow(routeCode, amount, idTimeStr, position = "beforeend") {
 
 function resetTerminal() {
   activePassId = null;
-  document.getElementById("scanUuid").value = "";
+  document.getElementById("scanInput").value = "";
   document.getElementById("walletName").innerText = "--";
   document.getElementById("walletPhone").innerText = "--";
   document.getElementById("walletBalance").innerText = "₹0.00";
   document.getElementById("authPanel").classList.add("disabled-state");
   document.getElementById("ledgerList").innerHTML =
-    '<li class="empty-state">Scan a card to view history.</li>';
+    '<li class="empty-state">Search or scan to view history.</li>';
 }
 
-// --- PASSENGER PORTAL LOGIC ---
+// SMART SEARCH ROUTING (Passenger Portal)
 document
   .getElementById("btnPassengerLookup")
   .addEventListener("click", async () => {
-    const uuid = document.getElementById("passengerUuid").value;
-    if (!uuid) return;
+    const rawQuery = document.getElementById("passengerUuid").value.trim();
+    if (!rawQuery) return;
+
+    let endpoint = "";
+    if (rawQuery.toUpperCase().startsWith("TNS-")) {
+      endpoint = `${API_URL}/pass/${rawQuery.toUpperCase()}`;
+    } else if (/^[\d\+\-\s]+$/.test(rawQuery)) {
+      const cleanPhone = rawQuery.replace(/[\s\-]/g, "");
+      endpoint = `${API_URL}/pass/phone/${cleanPhone}`;
+    } else {
+      endpoint = `${API_URL}/pass/name/${rawQuery}`;
+    }
 
     try {
-      const response = await fetch(`${API_URL}/pass/${uuid}`);
+      const response = await fetch(endpoint);
       if (response.ok && response.headers.get("content-length") !== "0") {
         currentPassengerPass = await response.json();
         document.getElementById("passengerWallet").style.display = "flex";
@@ -497,24 +592,34 @@ document
           `₹${currentPassengerPass.currentBalance.toFixed(2)}`;
         triggerHaptic("success");
       } else {
-        showModal("error", "Card Not Found", "Check your Reference ID.");
+        showModal(
+          "error",
+          "Account Not Found",
+          "Could not locate a wallet with those details.",
+        );
         document.getElementById("passengerWallet").style.display = "none";
         currentPassengerPass = null;
       }
     } catch (err) {
-      showModal("error", "Network Error", "Cannot reach servers.");
+      showModal(
+        "error",
+        "Network Error",
+        "Cannot reach transit servers. Please check your connection.",
+      );
     }
   });
 
 document.getElementById("btnDownloadCard").addEventListener("click", () => {
   if (currentPassengerPass) {
+    const phoneToDisplay =
+      currentPassengerPass.passengerPhone || "No Phone Registered";
     showModal(
       "success",
       "",
       "",
       currentPassengerPass.passUuid,
       currentPassengerPass.passengerName,
-      "Verified User",
+      phoneToDisplay,
     );
   }
 });

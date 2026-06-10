@@ -109,12 +109,13 @@
               <div class="input-row" style="margin-top: 1.5rem">
                 <input
                   type="text"
-                  id="scanUuid"
+                  id="scanInput"
                   class="clean-input"
-                  placeholder="Reference ID"
+                  style="flex: 1"
+                  placeholder="Scan QR or Enter ID, Phone, or Name..."
                 />
                 <button id="btnLookup" class="action-btn outline-btn">
-                  Lookup
+                  Find
                 </button>
               </div>
             </section>
@@ -134,15 +135,13 @@
 
               <div class="transaction-controls">
                 <div class="control-group">
-                  <label>Route Selection</label>
-                  <div class="custom-select-wrapper" id="routeDropdownWrapper">
+                  <label>Boarding Stage</label>
+                  <div class="custom-select-wrapper" id="boardDropdownWrapper">
                     <div
                       class="custom-select-trigger"
-                      id="routeDropdownTrigger"
+                      id="boardDropdownTrigger"
                     >
-                      <span id="selectedRouteText"
-                        >ROUTE-A1 (Chidambaram - Chennai)</span
-                      >
+                      <span id="selectedBoardText">Chidambaram</span>
                       <svg
                         class="custom-arrow"
                         width="18"
@@ -151,35 +150,53 @@
                         fill="none"
                         stroke="currentColor"
                         stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
                       >
                         <polyline points="6 9 12 15 18 9"></polyline>
                       </svg>
                     </div>
-                    <div class="custom-options" id="routeOptions">
-                      <div class="custom-option active" data-value="ROUTE-A1">
-                        ROUTE-A1 (Chidambaram - Chennai)
-                      </div>
-                      <div class="custom-option" data-value="ROUTE-B2">
-                        ROUTE-B2 (Salem Express)
-                      </div>
-                      <div class="custom-option" data-value="ROUTE-L1">
-                        ROUTE-L1 (Local Shuttle)
-                      </div>
-                    </div>
+                    <div class="custom-options" id="boardOptions"></div>
                   </div>
-                  <input type="hidden" id="routeCode" value="ROUTE-A1" />
+                  <input type="hidden" id="boardStage" value="CHIDAMBARAM" />
                 </div>
 
                 <div class="control-group">
-                  <label>Fare Amount</label>
+                  <label>Alighting Stage</label>
+                  <div class="custom-select-wrapper" id="alightDropdownWrapper">
+                    <div
+                      class="custom-select-trigger"
+                      id="alightDropdownTrigger"
+                    >
+                      <span id="selectedAlightText">Salem (Central)</span>
+                      <svg
+                        class="custom-arrow"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </div>
+                    <div class="custom-options" id="alightOptions"></div>
+                  </div>
+                  <input type="hidden" id="alightStage" value="SALEM" />
+                </div>
+
+                <div class="control-group">
+                  <label>Calculated Fare (₹)</label>
                   <input
                     type="number"
                     id="fareAmount"
                     class="clean-input"
-                    value="45.00"
-                    step="0.50"
+                    value="195.00"
+                    readonly
+                    style="
+                      background: rgba(16, 185, 129, 0.05);
+                      color: var(--success-green);
+                      font-weight: 700;
+                    "
                   />
                 </div>
               </div>
@@ -223,6 +240,10 @@
                   id="newPhone"
                   class="clean-input"
                   placeholder="Enter Mobile Number"
+                  maxlength="10"
+                  oninput="
+                    this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)
+                  "
                   required
                 />
               </div>
@@ -259,7 +280,7 @@
                 type="text"
                 id="passengerUuid"
                 class="clean-input"
-                placeholder="Enter Reference ID"
+                placeholder="Enter Ref ID, Phone, or Name..."
               />
               <button id="btnPassengerLookup" class="action-btn primary-btn">
                 Check
@@ -318,8 +339,39 @@
 
         <div id="cardRenderer" class="transit-id-card" style="display: none">
           <div class="card-header">
-            <div class="logo-mark-small">T</div>
-            <span>TransitPay Smart Card</span>
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="color: #fbbf24"
+            >
+              <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+              <rect x="9" y="9" width="6" height="6"></rect>
+              <line x1="9" y1="1" x2="9" y2="4"></line>
+              <line x1="15" y1="1" x2="15" y2="4"></line>
+              <line x1="9" y1="20" x2="9" y2="23"></line>
+              <line x1="15" y1="20" x2="15" y2="23"></line>
+              <line x1="20" y1="9" x2="23" y2="9"></line>
+              <line x1="20" y1="14" x2="23" y2="14"></line>
+              <line x1="1" y1="9" x2="4" y2="9"></line>
+              <line x1="1" y1="14" x2="4" y2="14"></line>
+            </svg>
+            <span style="flex: 1; margin-left: 10px">TransitPay Pass</span>
+            <div
+              class="logo-mark-small"
+              style="
+                background: transparent;
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+              "
+            >
+              T
+            </div>
           </div>
           <div class="card-body">
             <div class="card-details">

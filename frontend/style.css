@@ -368,7 +368,7 @@ body {
   font-weight: 700;
 }
 
-/* Custom Camera UI (QR Optimized) */
+/* Custom Camera UI */
 .camera-container {
   position: relative;
   width: 100%;
@@ -423,8 +423,6 @@ body {
   cursor: pointer;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
-
-/* Hide default html5-qrcode controls */
 #qrReader__dashboard_section_csr span,
 #qrReader__dashboard_section_swaplink {
   display: none !important;
@@ -595,33 +593,47 @@ body {
   white-space: pre-line;
 }
 
-/* PVC ID Card Renderer (QR Configured) */
+/* Premium Smart Card UI (Dark Mode Base) */
 .transit-id-card {
-  background: linear-gradient(135deg, #ffffff, #f1f5f9);
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
   width: 100%;
-  max-width: 300px;
+  max-width: 320px;
   margin: 0 auto 1.5rem auto;
+  position: relative;
   overflow: hidden;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.3);
   text-align: left;
 }
+.transit-id-card::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at center,
+    rgba(37, 99, 235, 0.15) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+}
 .card-header {
-  background: var(--brand-blue);
-  color: white;
-  padding: 1rem;
+  position: relative;
+  z-index: 1;
+  padding: 1.2rem 1.5rem;
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  font-weight: 700;
-  font-size: 0.9rem;
-}
-.card-header .logo-mark-small {
-  background: white;
-  color: var(--brand-blue);
+  font-weight: 800;
+  font-size: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 .card-body {
+  position: relative;
+  z-index: 1;
   padding: 1.5rem;
   display: flex;
   justify-content: space-between;
@@ -630,44 +642,46 @@ body {
 .card-label {
   font-size: 0.65rem;
   font-weight: 700;
-  color: #64748b;
-  letter-spacing: 0.5px;
-  margin-bottom: 0.2rem;
+  color: #94a3b8;
+  letter-spacing: 1px;
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
 }
 .card-body h4 {
-  font-size: 1.1rem;
-  color: #0f172a;
-  margin-bottom: 0.8rem;
-  font-weight: 800;
+  font-size: 1.2rem;
+  color: white;
+  margin-bottom: 1rem;
+  font-weight: 700;
 }
 .card-value {
-  font-size: 0.9rem;
-  color: #334155;
+  font-size: 0.95rem;
+  color: #e2e8f0;
   font-weight: 500;
+  letter-spacing: 0.5px;
 }
 .qr-container {
   background: white;
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 6px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 .card-footer {
-  background: #f8fafc;
-  padding: 0.8rem;
+  position: relative;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem;
   text-align: center;
-  border-top: 1px dashed #cbd5e1;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 .uuid-text {
   font-family: monospace;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #64748b;
-  letter-spacing: 1px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  letter-spacing: 2px;
 }
 
+/* Print Mode Overrides (Saves Ink, Keeps Layout) */
 @media print {
   body * {
     visibility: hidden;
@@ -675,8 +689,6 @@ body {
   #printableArea,
   #printableArea * {
     visibility: visible;
-    color: black !important;
-    background: white !important;
   }
   #printableArea {
     position: absolute;
@@ -688,5 +700,32 @@ body {
   }
   .no-print {
     display: none !important;
+  }
+
+  .transit-id-card {
+    background: white !important;
+    color: black !important;
+    border: 2px solid #cbd5e1 !important;
+    box-shadow: none !important;
+  }
+  .transit-id-card::before {
+    display: none;
+  }
+  .card-header,
+  .card-footer {
+    border-color: #cbd5e1 !important;
+    background: transparent !important;
+  }
+  .card-body h4,
+  .card-value,
+  .uuid-text {
+    color: black !important;
+  }
+  .card-label {
+    color: #64748b !important;
+  }
+  .logo-mark-small {
+    color: black !important;
+    border-color: black !important;
   }
 }
