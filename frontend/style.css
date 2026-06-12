@@ -68,13 +68,9 @@ body {
   }
 }
 
-/* Authentication Gateway */
 .auth-gateway {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background: var(--bg-main);
   display: flex;
   justify-content: center;
@@ -104,7 +100,6 @@ body {
   letter-spacing: -0.5px;
 }
 
-/* App Layout & Header */
 .app-container {
   width: 100%;
   max-width: 500px;
@@ -206,7 +201,6 @@ body {
   background: rgba(0, 0, 0, 0.05);
 }
 
-/* Tabs */
 .tab-nav {
   display: flex;
   background: var(--bg-surface);
@@ -225,12 +219,10 @@ body {
   transition: all 0.2s;
 }
 .tab-btn.active {
-  color: var(--brand-blue);
-  border-bottom-color: var(--brand-blue);
   color: var(--text-primary);
+  border-bottom-color: var(--brand-blue);
 }
 
-/* Workspace */
 .workspace {
   padding: 1.5rem;
   overflow-y: auto;
@@ -255,7 +247,6 @@ body {
   color: var(--text-primary);
 }
 
-/* Inputs & Forms */
 .input-row {
   display: flex;
   gap: 0.5rem;
@@ -287,7 +278,6 @@ body {
   margin-bottom: 0.4rem;
 }
 
-/* Custom Dropdown UI */
 .custom-select-wrapper {
   position: relative;
   user-select: none;
@@ -368,7 +358,6 @@ body {
   font-weight: 700;
 }
 
-/* Custom Camera UI */
 .camera-container {
   position: relative;
   width: 100%;
@@ -428,7 +417,6 @@ body {
   display: none !important;
 }
 
-/* Buttons */
 .action-btn {
   padding: 1rem 1.5rem;
   font-size: 0.95rem;
@@ -466,7 +454,6 @@ body {
   width: 100%;
 }
 
-/* Wallet Info */
 .disabled-state {
   opacity: 0.3;
   pointer-events: none;
@@ -502,7 +489,6 @@ body {
   margin: 1.5rem 0;
 }
 
-/* Ledger */
 .module-title {
   font-size: 0.85rem;
   font-weight: 600;
@@ -544,7 +530,6 @@ body {
   padding: 1rem;
 }
 
-/* Modals */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -593,7 +578,7 @@ body {
   white-space: pre-line;
 }
 
-/* Premium Smart Card UI (Dark Mode Base) */
+/* Premium PVC Smart Card (Contrast Upgraded) */
 .transit-id-card {
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   color: white;
@@ -642,7 +627,7 @@ body {
 .card-label {
   font-size: 0.65rem;
   font-weight: 700;
-  color: #94a3b8;
+  color: #64748b;
   letter-spacing: 1px;
   margin-bottom: 0.3rem;
   text-transform: uppercase;
@@ -655,8 +640,8 @@ body {
 }
 .card-value {
   font-size: 0.95rem;
-  color: #e2e8f0;
-  font-weight: 500;
+  color: #ffffff;
+  font-weight: 600;
   letter-spacing: 0.5px;
 }
 .qr-container {
@@ -681,7 +666,6 @@ body {
   letter-spacing: 2px;
 }
 
-/* Print Mode Overrides (Saves Ink, Keeps Layout) */
 @media print {
   body * {
     visibility: hidden;
@@ -701,7 +685,6 @@ body {
   .no-print {
     display: none !important;
   }
-
   .transit-id-card {
     background: white !important;
     color: black !important;

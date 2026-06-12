@@ -70,6 +70,20 @@ public class TransitController {
         }
     }
 
+    // NEW: Top-Up Endpoint
+    @PostMapping("/pass/{uuid}/topup")
+    public ResponseEntity<?> topUpWallet(@PathVariable String uuid, @RequestBody Map<String, Double> payload) {
+        try {
+            Double amount = payload.get("amount");
+            if (amount == null) return ResponseEntity.badRequest().body(Map.of("error", "Amount is required."));
+            
+            CommuterPass updatedPass = transitService.topUpBalance(uuid, amount);
+            return ResponseEntity.ok(updatedPass);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @GetMapping("/ledger/{passId}")
     public ResponseEntity<List<FareReceipt>> getLedger(@PathVariable Long passId) {
         List<FareReceipt> ledger = transitService.getLedgerHistory(passId);

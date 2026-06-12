@@ -1,10 +1,11 @@
 const API_URL = "http://localhost:8080/api/transit";
 const OFFLINE_QUEUE_KEY = "transitpay_offline_txns";
+const OFFLINE_PASSENGER_DB_KEY = "transitpay_terminal_snapshot";
+
 let activePassId = null;
 let html5QrCode = null;
 let currentPassengerPass = null;
 
-// --- TNSTC REAL ROUTE DATA & FARE MATRIX (CHIDAMBARAM TO SALEM) ---
 const TNSTC_STAGES = [
   { id: "CHIDAMBARAM", name: "Chidambaram", cumulativeFare: 0 },
   { id: "VADALUR", name: "Vadalur", cumulativeFare: 25 },
@@ -24,7 +25,23 @@ document.addEventListener("DOMContentLoaded", () => {
   setupCustomDropdown();
   setupNetworkListeners();
   initScanner();
+  seedTestCache(); // Seeds your specific Dev ID so it works instantly offline for testing
 });
+
+// Seeds developer ID for immediate offline testing without typing dummy data
+function seedTestCache() {
+  let db = JSON.parse(localStorage.getItem(OFFLINE_PASSENGER_DB_KEY)) || {};
+  if (!db["TNS-DDGRCS"]) {
+    db["TNS-DDGRCS"] = {
+      id: 1,
+      passUuid: "TNS-DDGRCS",
+      passengerName: "Dharshan",
+      passengerPhone: "9876543210",
+      currentBalance: 500.0,
+    };
+    localStorage.setItem(OFFLINE_PASSENGER_DB_KEY, JSON.stringify(db));
+  }
+}
 
 function triggerHaptic(type) {
   if (!navigator.vibrate) return;
@@ -36,7 +53,6 @@ function initTheme() {
   const btn = document.getElementById("themeToggle");
   if (localStorage.getItem("transit_theme") === "dark")
     document.body.classList.add("dark-theme");
-
   btn.addEventListener("click", () => {
     document.body.classList.toggle("dark-theme");
     localStorage.setItem(
@@ -110,17 +126,13 @@ function populateStageDropdown(
 function calculateDynamicFare() {
   const boardId = document.getElementById("boardStage").value;
   const alightId = document.getElementById("alightStage").value;
-
   const boardStage = TNSTC_STAGES.find((s) => s.id === boardId);
   const alightStage = TNSTC_STAGES.find((s) => s.id === alightId);
-
   let netFare = Math.abs(
     alightStage.cumulativeFare - boardStage.cumulativeFare,
   );
-
   if (netFare === 0 && boardId !== alightId) netFare = 15.0;
   if (boardId === alightId) netFare = 0.0;
-
   document.getElementById("fareAmount").value = netFare.toFixed(2);
 }
 
@@ -135,7 +147,6 @@ function setupAuth() {
   const mainApp = document.getElementById("mainApp");
   const roleLabel = document.getElementById("roleLabel");
   const conductorNav = document.getElementById("conductorNav");
-
   const viewScan = document.getElementById("view-scan");
   const viewIssue = document.getElementById("view-issue");
   const viewPassenger = document.getElementById("view-passenger");
@@ -212,11 +223,9 @@ function showModal(
     standardContent.style.display = "none";
     cardRender.style.display = "block";
     printBtn.style.display = "block";
-
     document.getElementById("cardName").innerText = name;
     document.getElementById("cardPhone").innerText = phone;
     document.getElementById("cardUuid").innerText = uuidForCard;
-
     const qrContainer = document.getElementById("cardQrCode");
     qrContainer.innerHTML = "";
     new QRCode(qrContainer, {
@@ -261,7 +270,6 @@ function startScanner() {
   if (html5QrCode && !html5QrCode.isScanning) {
     document.getElementById("cameraStartOverlay").style.display = "none";
     document.getElementById("cameraCloseBtn").style.display = "block";
-
     html5QrCode
       .start(
         { facingMode: "environment" },
@@ -320,7 +328,6 @@ function queueTransactionLocally(payload) {
   payload.localTimestamp = new Date().toISOString();
   queue.push(payload);
   localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
-
   showModal(
     "success",
     "Saved Offline",
@@ -337,7 +344,6 @@ function queueTransactionLocally(payload) {
 async function syncOfflineTransactions() {
   let queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY)) || [];
   if (queue.length === 0) return;
-
   let successfulSyncs = [];
   for (let i = 0; i < queue.length; i++) {
     try {
@@ -354,7 +360,7 @@ async function syncOfflineTransactions() {
   if (successfulSyncs.length > 0 && activePassId) fetchLedger(activePassId);
 }
 
-// --- TRANSIT OPERATIONS ---
+// NEW: DYNAMIC OFFLINE CACHING
 document.getElementById("btnIssuePass").addEventListener("click", async () => {
   const name = document.getElementById("newName").value;
   const phone = document.getElementById("newPhone").value;
@@ -381,9 +387,21 @@ document.getElementById("btnIssuePass").addEventListener("click", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-
     if (response.ok) {
       showModal("success", "", "", uuid, name, phone);
+
+      // On-The-Fly Cache Creation
+      let localDb =
+        JSON.parse(localStorage.getItem(OFFLINE_PASSENGER_DB_KEY)) || {};
+      localDb[uuid] = {
+        id: Date.now(),
+        passUuid: uuid,
+        passengerName: name,
+        passengerPhone: phone,
+        currentBalance: balance,
+      };
+      localStorage.setItem(OFFLINE_PASSENGER_DB_KEY, JSON.stringify(localDb));
+
       document.getElementById("newName").value = "";
       document.getElementById("newPhone").value = "";
       document.getElementById("newBalance").value = "";
@@ -391,21 +409,64 @@ document.getElementById("btnIssuePass").addEventListener("click", async () => {
       showModal("error", "Database Error", "Failed to register passenger.");
     }
   } catch (err) {
-    showModal("error", "Offline", "Cannot reach network.");
+    showModal(
+      "error",
+      "Offline Mode",
+      "Cannot register new passengers while offline.",
+    );
   }
 });
 
-// SMART SEARCH ROUTING (Conductor)
+function searchOfflineSnapshot(query) {
+  const db = JSON.parse(localStorage.getItem(OFFLINE_PASSENGER_DB_KEY)) || {};
+  const upperQuery = query.toUpperCase();
+  if (db[upperQuery]) return db[upperQuery];
+  for (const key in db) {
+    const pass = db[key];
+    if (
+      pass.passengerPhone === query ||
+      pass.passengerName.toUpperCase().includes(upperQuery)
+    )
+      return pass;
+  }
+  return null;
+}
+
 document.getElementById("btnLookup").addEventListener("click", async () => {
   const rawQuery = document.getElementById("scanInput").value.trim();
   if (!rawQuery) return;
+
+  if (!navigator.onLine) {
+    const offlinePass = searchOfflineSnapshot(rawQuery);
+    if (offlinePass) {
+      activePassId = offlinePass.id;
+      document.getElementById("walletName").innerText =
+        offlinePass.passengerName;
+      document.getElementById("walletPhone").innerText =
+        offlinePass.passengerPhone || "No Phone";
+      document.getElementById("walletBalance").innerText =
+        `₹${offlinePass.currentBalance.toFixed(2)}`;
+      document.getElementById("scanInput").value = offlinePass.passUuid;
+      document.getElementById("authPanel").classList.remove("disabled-state");
+      document.getElementById("ledgerList").innerHTML =
+        '<li class="empty-state">Ledger history hidden while offline.</li>';
+      triggerHaptic("success");
+    } else {
+      showModal(
+        "error",
+        "Not Found in Cache",
+        "ID not found in local offline cache. Connect to network to search live database.",
+      );
+      resetTerminal();
+    }
+    return;
+  }
 
   let endpoint = "";
   if (rawQuery.toUpperCase().startsWith("TNS-")) {
     endpoint = `${API_URL}/pass/${rawQuery.toUpperCase()}`;
   } else if (/^[\d\+\-\s]+$/.test(rawQuery)) {
-    const cleanPhone = rawQuery.replace(/[\s\-]/g, "");
-    endpoint = `${API_URL}/pass/phone/${cleanPhone}`;
+    endpoint = `${API_URL}/pass/phone/${rawQuery.replace(/[\s\-]/g, "")}`;
   } else {
     endpoint = `${API_URL}/pass/name/${rawQuery}`;
   }
@@ -415,14 +476,12 @@ document.getElementById("btnLookup").addEventListener("click", async () => {
     if (response.ok && response.headers.get("content-length") !== "0") {
       const pass = await response.json();
       activePassId = pass.id;
-
       document.getElementById("walletName").innerText = pass.passengerName;
       document.getElementById("walletPhone").innerText =
         pass.passengerPhone || "No Phone Registered";
       document.getElementById("walletBalance").innerText =
         `₹${pass.currentBalance.toFixed(2)}`;
       document.getElementById("scanInput").value = pass.passUuid;
-
       document.getElementById("authPanel").classList.remove("disabled-state");
       fetchLedger(activePassId);
     } else {
@@ -434,7 +493,7 @@ document.getElementById("btnLookup").addEventListener("click", async () => {
       resetTerminal();
     }
   } catch (err) {
-    showModal("error", "Connection Failed", "Operating in limited capacity.");
+    showModal("error", "Network Error", "Request failed. Check connection.");
   }
 });
 
@@ -446,14 +505,12 @@ document
     const aStage = document.getElementById("alightStage").value;
     const amount = parseFloat(document.getElementById("fareAmount").value);
 
-    if (amount <= 0) {
-      showModal(
+    if (amount <= 0)
+      return showModal(
         "error",
         "Invalid Journey",
         "Boarding and Alighting points cannot be identical.",
       );
-      return;
-    }
 
     const shortRouteDisplay = `${bStage.substring(0, 4)}→${aStage.substring(0, 4)}`;
     const payload = {
@@ -507,11 +564,23 @@ function updateLocalBalance(amount) {
   let currentBal = parseFloat(
     document.getElementById("walletBalance").innerText.replace("₹", ""),
   );
-  document.getElementById("walletBalance").innerText =
-    `₹${(currentBal - amount).toFixed(2)}`;
+  if (!isNaN(currentBal)) {
+    document.getElementById("walletBalance").innerText =
+      `₹${(currentBal - amount).toFixed(2)}`;
+
+    // Also update offline cache visually
+    const uuid = document.getElementById("scanInput").value;
+    let localDb =
+      JSON.parse(localStorage.getItem(OFFLINE_PASSENGER_DB_KEY)) || {};
+    if (localDb[uuid]) {
+      localDb[uuid].currentBalance -= amount;
+      localStorage.setItem(OFFLINE_PASSENGER_DB_KEY, JSON.stringify(localDb));
+    }
+  }
 }
 
 async function fetchLedger(passId) {
+  if (!navigator.onLine) return;
   try {
     const response = await fetch(`${API_URL}/ledger/${passId}`);
     const ledger = await response.json();
@@ -540,16 +609,11 @@ function injectLedgerRow(routeCode, amount, idTimeStr, position = "beforeend") {
   const list = document.getElementById("ledgerList");
   const emptyState = list.querySelector(".empty-state");
   if (emptyState) emptyState.remove();
-
   const html = `
         <li class="ledger-item fade-in">
-            <div class="item-details">
-                <span class="item-route">Route ${routeCode}</span>
-                <span class="item-time">${idTimeStr}</span>
-            </div>
+            <div class="item-details"><span class="item-route">Route ${routeCode}</span><span class="item-time">${idTimeStr}</span></div>
             <span class="item-amount">-₹${parseFloat(amount).toFixed(2)}</span>
-        </li>
-    `;
+        </li>`;
   list.insertAdjacentHTML(position, html);
 }
 
@@ -564,19 +628,27 @@ function resetTerminal() {
     '<li class="empty-state">Search or scan to view history.</li>';
 }
 
-// SMART SEARCH ROUTING (Passenger Portal)
 document
   .getElementById("btnPassengerLookup")
   .addEventListener("click", async () => {
     const rawQuery = document.getElementById("passengerUuid").value.trim();
     if (!rawQuery) return;
 
+    if (!navigator.onLine) {
+      showModal(
+        "error",
+        "Offline Mode",
+        "Cannot reach transit servers to fetch your smart card data.",
+      );
+      document.getElementById("passengerWallet").style.display = "none";
+      return;
+    }
+
     let endpoint = "";
     if (rawQuery.toUpperCase().startsWith("TNS-")) {
       endpoint = `${API_URL}/pass/${rawQuery.toUpperCase()}`;
     } else if (/^[\d\+\-\s]+$/.test(rawQuery)) {
-      const cleanPhone = rawQuery.replace(/[\s\-]/g, "");
-      endpoint = `${API_URL}/pass/phone/${cleanPhone}`;
+      endpoint = `${API_URL}/pass/phone/${rawQuery.replace(/[\s\-]/g, "")}`;
     } else {
       endpoint = `${API_URL}/pass/name/${rawQuery}`;
     }
@@ -605,6 +677,77 @@ document
         "error",
         "Network Error",
         "Cannot reach transit servers. Please check your connection.",
+      );
+    }
+  });
+
+document
+  .getElementById("btnProcessTopUp")
+  .addEventListener("click", async () => {
+    if (!currentPassengerPass || !navigator.onLine) {
+      showModal(
+        "error",
+        "Offline Error",
+        "Top-ups require an active internet connection to securely update the database ledger.",
+      );
+      return;
+    }
+
+    const amountInput = document.getElementById("topupAmount");
+    const amount = parseFloat(amountInput.value);
+
+    if (isNaN(amount) || amount <= 0) {
+      showModal(
+        "error",
+        "Invalid Amount",
+        "Please enter a valid amount to recharge.",
+      );
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_URL}/pass/${currentPassengerPass.passUuid}/topup`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: amount }),
+        },
+      );
+
+      if (response.ok) {
+        const updatedPass = await response.json();
+        currentPassengerPass = updatedPass; // Update active UI state
+        document.getElementById("pBalance").innerText =
+          `₹${updatedPass.currentBalance.toFixed(2)}`;
+        amountInput.value = "";
+
+        // --- THE BUG FIX: DYNAMIC CACHE SYNCHRONIZATION ---
+        let localDb =
+          JSON.parse(localStorage.getItem(OFFLINE_PASSENGER_DB_KEY)) || {};
+        // Overwrite the stale offline cache with the fresh data from the server
+        localDb[updatedPass.passUuid] = updatedPass;
+        localStorage.setItem(OFFLINE_PASSENGER_DB_KEY, JSON.stringify(localDb));
+        // --------------------------------------------------
+
+        showModal(
+          "success",
+          "Recharge Successful",
+          `₹${amount.toFixed(2)} has been securely added to your TransitPay wallet.`,
+        );
+      } else {
+        const err = await response.json();
+        showModal(
+          "error",
+          "Recharge Failed",
+          err.error || "Unable to process transaction.",
+        );
+      }
+    } catch (err) {
+      showModal(
+        "error",
+        "Network Error",
+        "Secure connection dropped. Please try again.",
       );
     }
   });

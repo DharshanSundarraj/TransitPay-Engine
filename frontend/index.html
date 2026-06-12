@@ -91,7 +91,6 @@
               <div class="scanner-header">
                 <h2 class="section-title">Scan Transit QR</h2>
               </div>
-
               <div id="reader-container" class="camera-container">
                 <div id="cameraStartOverlay" class="camera-overlay">
                   <span>TAP TO START SCANNER</span>
@@ -105,14 +104,13 @@
                 </button>
                 <div id="qrReader"></div>
               </div>
-
               <div class="input-row" style="margin-top: 1.5rem">
                 <input
                   type="text"
                   id="scanInput"
                   class="clean-input"
                   style="flex: 1"
-                  placeholder="Scan QR or Enter ID, Phone, or Name..."
+                  placeholder="Scan QR or Enter ID..."
                 />
                 <button id="btnLookup" class="action-btn outline-btn">
                   Find
@@ -130,9 +128,7 @@
                   <h2 id="walletBalance">₹0.00</h2>
                 </div>
               </div>
-
               <hr class="divider" />
-
               <div class="transaction-controls">
                 <div class="control-group">
                   <label>Boarding Stage</label>
@@ -158,7 +154,6 @@
                   </div>
                   <input type="hidden" id="boardStage" value="CHIDAMBARAM" />
                 </div>
-
                 <div class="control-group">
                   <label>Alighting Stage</label>
                   <div class="custom-select-wrapper" id="alightDropdownWrapper">
@@ -183,7 +178,6 @@
                   </div>
                   <input type="hidden" id="alightStage" value="SALEM" />
                 </div>
-
                 <div class="control-group">
                   <label>Calculated Fare (₹)</label>
                   <input
@@ -221,11 +215,10 @@
         <div id="view-issue" class="view-panel" style="display: none">
           <section class="module issue-module">
             <h2 class="section-title">Commuter Registration</h2>
-
             <div class="form-stack">
               <div class="control-group">
-                <label>Full Name</label>
-                <input
+                <label>Full Name</label
+                ><input
                   type="text"
                   id="newName"
                   class="clean-input"
@@ -234,8 +227,8 @@
                 />
               </div>
               <div class="control-group">
-                <label>Contact Number</label>
-                <input
+                <label>Contact Number</label
+                ><input
                   type="tel"
                   id="newPhone"
                   class="clean-input"
@@ -248,8 +241,8 @@
                 />
               </div>
               <div class="control-group">
-                <label>Initial Deposit (₹)</label>
-                <input
+                <label>Initial Deposit (₹)</label
+                ><input
                   type="number"
                   id="newBalance"
                   class="clean-input"
@@ -270,8 +263,7 @@
 
         <div id="view-passenger" class="view-panel" style="display: none">
           <section class="module">
-            <h2 class="section-title">Wallet Balance</h2>
-
+            <h2 class="section-title">Wallet Portal</h2>
             <div
               class="input-row"
               style="margin-bottom: 2rem; margin-top: 1rem"
@@ -280,49 +272,116 @@
                 type="text"
                 id="passengerUuid"
                 class="clean-input"
-                placeholder="Enter Ref ID, Phone, or Name..."
+                placeholder="Enter Ref ID or Phone..."
               />
               <button id="btnPassengerLookup" class="action-btn primary-btn">
-                Check
+                Login
               </button>
             </div>
 
             <div
               id="passengerWallet"
-              class="wallet-info"
-              style="
-                display: none;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1.5rem;
-                background: rgba(37, 99, 235, 0.05);
-                padding: 1.5rem;
-                border-radius: 12px;
-                border: 1px solid rgba(37, 99, 235, 0.2);
-              "
+              style="display: none; flex-direction: column; gap: 1.5rem"
             >
               <div
                 style="
-                  display: flex;
-                  justify-content: space-between;
-                  width: 100%;
+                  background: rgba(37, 99, 235, 0.05);
+                  padding: 1.5rem;
+                  border-radius: 12px;
+                  border: 1px solid rgba(37, 99, 235, 0.2);
                 "
               >
-                <div>
-                  <h3 id="pName" class="data-value">--</h3>
-                  <p class="meta-label">Active Passenger</p>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: 1.5rem;
+                  "
+                >
+                  <div>
+                    <h3 id="pName" class="data-value">--</h3>
+                    <p class="meta-label">Active Passenger</p>
+                  </div>
+                  <div class="balance-badge"><h2 id="pBalance">₹0.00</h2></div>
                 </div>
-                <div class="balance-badge">
-                  <h2 id="pBalance">₹0.00</h2>
-                </div>
+                <button
+                  id="btnDownloadCard"
+                  class="action-btn outline-btn full-width"
+                >
+                  View Digital Smart Card
+                </button>
               </div>
 
-              <button
-                id="btnDownloadCard"
-                class="action-btn outline-btn full-width"
+              <div
+                style="
+                  background: var(--bg-surface);
+                  padding: 1.5rem;
+                  border-radius: 12px;
+                  border: 1px solid var(--border-light);
+                  box-shadow: var(--shadow-sm);
+                "
               >
-                View / Print Smart Card
-              </button>
+                <h4
+                  style="
+                    font-size: 0.9rem;
+                    font-weight: 700;
+                    margin-bottom: 1rem;
+                    color: var(--text-primary);
+                  "
+                >
+                  Top Up Wallet Balance
+                </h4>
+                <div class="input-row" style="align-items: center">
+                  <div
+                    style="
+                      position: relative;
+                      width: 100%;
+                      display: flex;
+                      align-items: center;
+                    "
+                  >
+                    <span
+                      style="
+                        position: absolute;
+                        left: 1.2rem;
+                        font-weight: 600;
+                        color: var(--text-secondary);
+                        pointer-events: none;
+                      "
+                      >₹</span
+                    >
+                    <input
+                      type="number"
+                      id="topupAmount"
+                      class="clean-input"
+                      style="padding-left: 2.5rem"
+                      placeholder="Amount"
+                      min="1"
+                    />
+                  </div>
+                  <button
+                    id="btnProcessTopUp"
+                    class="action-btn success-btn"
+                    style="gap: 0.5rem; white-space: nowrap"
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Top Up
+                  </button>
+                </div>
+              </div>
             </div>
           </section>
         </div>
@@ -336,7 +395,6 @@
           <h3 id="modalTitle">Status</h3>
           <p id="modalMessage">Message content.</p>
         </div>
-
         <div id="cardRenderer" class="transit-id-card" style="display: none">
           <div class="card-header">
             <svg
@@ -386,7 +444,6 @@
             <p id="cardUuid" class="uuid-text">--</p>
           </div>
         </div>
-
         <div class="modal-actions no-print">
           <button
             id="btnPrintBtn"
@@ -401,7 +458,6 @@
         </div>
       </div>
     </div>
-
     <script src="app.js"></script>
   </body>
 </html>
