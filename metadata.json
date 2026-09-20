@@ -1,0 +1,10 @@
+{
+  "name": "TransitPay",
+  "description": "Full-stack transit payment web application with dual portals.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
